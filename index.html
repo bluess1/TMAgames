@@ -3,9 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TMA Game - A fun web-based JavaScript game">
+    <meta name="author" content="Your Name">
     <title>TMA Game</title>
+    
+    <!-- Favicon (optional) -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    
+    <!-- Preload important resources -->
+    <link rel="preload" href="home.js" as="script">
+    
+    <!-- SEO and social media meta tags -->
+    <meta property="og:title" content="TMA Game">
+    <meta property="og:description" content="A fun web-based JavaScript game">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourusername.github.io/tmagame">
+    
+    <!-- Mobile optimization -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TMA Game">
 </head>
 <body>
+    <!-- Loading indicator -->
+    <div id="loading" style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: Arial, sans-serif;
+        color: #667eea;
+        font-size: 1.2rem;
+        z-index: 1000;
+    ">
+        Loading TMA Game...
+    </div>
+    
+    <!-- Main game container will be created by home.js -->
+    
+    <!-- Load the main game script -->
     <script src="home.js"></script>
+    
+    <!-- Remove loading indicator once game loads -->
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }, 500);
+        });
+    </script>
+    
+    <!-- Analytics (optional - replace with your tracking code) -->
+    <!-- 
+    <script>
+        // Add Google Analytics or other tracking here
+    </script>
+    -->
 </body>
 </html>
