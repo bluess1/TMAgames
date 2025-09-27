@@ -1,1 +1,159 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash - TMA Game</title>
+    
+    <!-- Game-specific styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Preload scripts -->
+    <link rel="preload" href="physics.js" as="script">
+    <link rel="preload" href="multiplayer.js" as="script">
+    <link rel="preload" href="game.js" as="script">
+    
+    <!-- Mobile optimization -->
+    <meta name="theme-color" content="#74b9ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <!-- Game Header -->
+    <div id="game-header">
+        <button id="home-btn" onclick="window.location.href='../../index.html'">
+            🏠 Home
+        </button>
+        <h2 id="game-title">Geometry Dash</h2>
+        <div id="game-controls">
+            <button id="pause-btn" onclick="gameInstance.togglePause()">⏸️ Pause</button>
+            <button id="restart-btn" onclick="gameInstance.restart()">🔄 Restart</button>
+        </div>
+    </div>
+    
+    <!-- Game Container -->
+    <div id="game-container">
+        <!-- Loading Screen -->
+        <div id="loading-screen">
+            <div class="loading-spinner"></div>
+            <p>Loading Geometry Dash...</p>
+        </div>
+        
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Game UI Overlay -->
+        <div id="game-ui">
+            <div id="progress-container">
+                <div id="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <span id="progress-text">0%</span>
+            </div>
+            
+            <!-- Multiplayer Info -->
+            <div id="multiplayer-info" style="display: none;">
+                <span id="player-count">Players: 1</span>
+                <span id="room-id">Room: </span>
+            </div>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" style="display: none;">
+            <div class="modal-content">
+                <h3>Game Over!</h3>
+                <p id="final-progress">You reached 0%</p>
+                <div class="modal-buttons">
+                    <button onclick="gameInstance.restart()">🔄 Try Again</button>
+                    <button onclick="window.location.href='../../index.html'">🏠 Home</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Victory Screen -->
+        <div id="victory-screen" style="display: none;">
+            <div class="modal-content">
+                <h3>🎉 Level Complete!</h3>
+                <p>Congratulations! You beat the level!</p>
+                <div class="modal-buttons">
+                    <button onclick="gameInstance.restart()">🔄 Play Again</button>
+                    <button onclick="window.location.href='../../index.html'">🏠 Home</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Menu Screen -->
+        <div id="menu-screen">
+            <div class="menu-content">
+                <h1>Geometry Dash</h1>
+                <p>Click or press SPACE to jump!</p>
+                <div class="menu-buttons">
+                    <button onclick="gameInstance.startGame(false)">🎮 Single Player</button>
+                    <button onclick="gameInstance.startGame(true)">👥 Multiplayer</button>
+                </div>
+                <div class="controls-info">
+                    <p><strong>Controls:</strong></p>
+                    <p>🖱️ Click to jump</p>
+                    <p>⌨️ SPACE to jump</p>
+                    <p>📱 Tap to jump (mobile)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Touch Controls -->
+    <div id="mobile-controls">
+        <button id="jump-btn">JUMP</button>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="physics.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="game.js"></script>
+    
+    <!-- Game Initialization -->
+    <script>
+        let gameInstance;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hide loading screen after everything loads
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+            }, 1000);
+            
+            // Initialize game
+            gameInstance = new GeometryDashGame();
+            
+            // Mobile detection and setup
+            if (window.innerWidth <= 768) {
+                document.getElementById('mobile-controls').style.display = 'flex';
+                document.getElementById('jump-btn').addEventListener('click', () => {
+                    gameInstance.handleJump();
+                });
+            }
+        });
+        
+        // Handle page visibility change (pause when tab is hidden)
+        document.addEventListener('visibilitychange', () => {
+            if (gameInstance) {
+                if (document.hidden) {
+                    gameInstance.pause();
+                } else {
+                    gameInstance.resume();
+                }
+            }
+        });
+        
+        // Prevent zoom on double tap (mobile)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (event) => {
+            const now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
