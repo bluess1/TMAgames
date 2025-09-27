@@ -1,4 +1,4 @@
-// home.js - TMA Game Home Page
+// home.js - TMA Game Home Page (Clean Version)
 class TMAGame {
     constructor() {
         this.gameTitle = "TMA Game";
@@ -59,7 +59,7 @@ class TMAGame {
         container.appendChild(menuDiv);
         container.appendChild(infoDiv);
         
-        // Add to body (or replace existing content)
+        // Add to body
         document.body.innerHTML = '';
         document.body.appendChild(container);
     }
@@ -125,12 +125,12 @@ class TMAGame {
     displayWelcomeMessage() {
         const welcomeEl = document.getElementById('welcome-message');
         const messages = [
-            `Welcome to ${this.gameTitle}!`,
+            'Welcome to ' + this.gameTitle + '!',
             'Ready to challenge yourself?',
             'Use arrow keys to navigate and Enter to select.'
         ];
         
-        welcomeEl.innerHTML = messages.map(msg => `<p>${msg}</p>`).join('');
+        welcomeEl.innerHTML = messages.map(msg => '<p>' + msg + '</p>').join('');
     }
 
     startGame() {
@@ -152,185 +152,239 @@ class TMAGame {
         `;
     }
 
-    launchGeometryDash(multiplayer = false) {
-        console.log('🎮 Launching Geometry Dash...', { multiplayer });
+    launchGeometryDash(multiplayer) {
+        console.log('🎮 Launching Geometry Dash...', multiplayer);
         
-        // Hide current menu
+        // Replace page with game
         document.body.innerHTML = `
-            <div id="game-header">
+            <div id="game-header" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 15px 20px;
+                color: white;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
                 <button onclick="window.location.reload()" style="
-                    position: absolute;
-                    top: 10px;
-                    left: 10px;
                     padding: 10px 15px;
-                    background: #667eea;
+                    background: #ff6b6b;
                     color: white;
                     border: none;
                     border-radius: 5px;
                     cursor: pointer;
-                    z-index: 1000;
                 ">🏠 Home</button>
-                <h2 style="text-align: center; margin: 20px 0; color: white;">
-                    Geometry Dash ${multiplayer ? '- Multiplayer' : '- Single Player'}
-                </h2>
+                <h2 style="margin: 0;">Geometry Dash ${multiplayer ? '- Multiplayer' : '- Single Player'}</h2>
+                <div></div>
             </div>
-            <div id="game-container" style="display: flex; justify-content: center; align-items: center;">
-                <canvas id="gameCanvas" style="border: 2px solid #333; border-radius: 10px;"></canvas>
+            <div id="game-container" style="
+                background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+                min-height: calc(100vh - 70px);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            ">
+                <canvas id="gameCanvas" style="
+                    border: 3px solid #2d3436;
+                    border-radius: 15px;
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                "></canvas>
             </div>
         `;
         
-        console.log('✅ HTML updated, loading game...');
-        
-        // Load and start the geometry dash game
+        // Initialize game after short delay
         setTimeout(() => {
-            this.loadGeometryDash(multiplayer);
-        }, 100); // Small delay to ensure DOM is updated
+            this.initializeGame(multiplayer);
+        }, 100);
     }
 
-    async loadGeometryDash(multiplayer) {
-        try {
-            // In a real setup, you'd load from games/geometry-dash/game.js
-            // For now, we'll create the game directly
+    initializeGame(multiplayer) {
+        console.log('Initializing game...');
+        
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas) {
+            console.error('Canvas not found!');
+            return;
+        }
+
+        // Set canvas size
+        canvas.width = Math.min(1000, window.innerWidth - 60);
+        canvas.height = Math.min(500, window.innerHeight - 150);
+        
+        const ctx = canvas.getContext('2d');
+        console.log('Canvas ready:', canvas.width + 'x' + canvas.height);
+        
+        // Game state
+        const game = {
+            player: {
+                x: 50,
+                y: canvas.height - 140,
+                width: 40,
+                height: 40,
+                velocityY: 0,
+                isGrounded: true,
+                color: '#FF6B6B'
+            },
+            obstacles: [],
+            gameSpeed: 3,
+            gravity: 0.8,
+            jumpPower: -15,
+            groundY: canvas.height - 100,
+            gameState: 'playing',
+            camera: { x: 0 },
+            levelLength: 3000
+        };
+
+        // Create obstacles
+        for (let x = 300; x < game.levelLength; x += 200 + Math.random() * 200) {
+            game.obstacles.push({
+                x: x,
+                y: game.groundY - 40,
+                width: 40,
+                height: 40
+            });
+        }
+
+        console.log('Created', game.obstacles.length, 'obstacles');
+
+        // Jump function
+        const handleJump = () => {
+            if (game.player.isGrounded && game.gameState === 'playing') {
+                game.player.velocityY = game.jumpPower;
+                game.player.isGrounded = false;
+                console.log('Jump!');
+            }
+        };
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                handleJump();
+            }
+        });
+
+        canvas.addEventListener('click', handleJump);
+
+        // Game loop
+        const gameLoop = () => {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Add game styles
-            const gameStyle = document.createElement('style');
-            gameStyle.textContent = `
-                #game-header {
-                    position: relative;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 10px 0;
-                    margin-bottom: 20px;
+            if (game.gameState === 'playing') {
+                // Physics
+                if (!game.player.isGrounded) {
+                    game.player.velocityY += game.gravity;
                 }
                 
-                #game-container {
-                    min-height: calc(100vh - 100px);
-                    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-                    padding: 20px;
+                game.player.y += game.player.velocityY;
+                game.player.x += game.gameSpeed;
+                
+                // Ground collision
+                if (game.player.y >= game.groundY - game.player.height) {
+                    game.player.y = game.groundY - game.player.height;
+                    game.player.velocityY = 0;
+                    game.player.isGrounded = true;
                 }
                 
-                .game-mode-btn {
-                    display: block;
-                    width: 100%;
-                    padding: 15px;
-                    margin: 10px 0;
-                    background: linear-gradient(45deg, #00b894, #00cec9);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 1.1rem;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
+                // Camera
+                game.camera.x = game.player.x - canvas.width / 4;
                 
-                .game-mode-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 5px 15px rgba(0, 184, 148, 0.4);
-                }
-            `;
-            document.head.appendChild(gameStyle);
-            
-            // Initialize the geometry dash game
-            // Note: In production, you'd import this from a separate file
-            if (typeof GeometryDashGame !== 'undefined') {
-                const game = new GeometryDashGame();
-                if (multiplayer) {
-                    game.startGame(true);
-                }
-            } else {
-                console.log('Geometry Dash game loaded successfully!');
-                console.log('Game would start here with multiplayer =', multiplayer);
-                
-                // For demo - show game interface
-                const canvas = document.getElementById('gameCanvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 1000;
-                canvas.height = 500;
-                
-                // Demo game screen
-                ctx.fillStyle = '#87CEEB';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = '#2D3436';
-                ctx.fillRect(0, 400, canvas.width, 100);
-                
-                ctx.fillStyle = '#FF6B6B';
-                ctx.fillRect(50, 360, 40, 40);
-                
-                ctx.fillStyle = '#2D3436';
-                ctx.font = 'bold 24px Arial';
-                ctx.fillText('Geometry Dash Demo', 50, 50);
-                ctx.font = '18px Arial';
-                ctx.fillText('Click or press SPACE to jump!', 50, 80);
-                ctx.fillText(`Mode: ${multiplayer ? 'Multiplayer' : 'Single Player'}`, 50, 110);
-                
-                // Add simple jump demo
-                let playerY = 360;
-                let velocity = 0;
-                let isGrounded = true;
-                
-                const gameLoop = () => {
-                    // Draw player
-                    ctx.fillStyle = '#FF6B6B';
-                    ctx.fillRect(50, playerY, 40, 40);
-                    
-                    // Draw UI
-                    ctx.fillStyle = '#2D3436';
-                    ctx.font = 'bold 24px Arial';
-                    ctx.fillText('Geometry Dash Demo', 50, 50);
-                    ctx.font = '18px Arial';
-                    ctx.fillText('Click or press SPACE to jump!', 50, 80);
-                    ctx.fillText(`Mode: ${multiplayer ? 'Multiplayer' : 'Single Player'}`, 50, 110);
-                    
-                    requestAnimationFrame(gameLoop);
-                };
-                
-                // Add jump controls
-                const handleJump = () => {
-                    if (isGrounded) {
-                        velocity = -15;
-                        isGrounded = false;
+                // Obstacle collision
+                for (let i = 0; i < game.obstacles.length; i++) {
+                    const obs = game.obstacles[i];
+                    if (game.player.x < obs.x + obs.width &&
+                        game.player.x + game.player.width > obs.x &&
+                        game.player.y < obs.y + obs.height &&
+                        game.player.y + game.player.height > obs.y) {
+                        
+                        game.gameState = 'dead';
+                        console.log('Player died!');
+                        
+                        setTimeout(() => {
+                            game.player.x = 50;
+                            game.player.y = game.groundY - game.player.height;
+                            game.player.velocityY = 0;
+                            game.player.isGrounded = true;
+                            game.camera.x = 0;
+                            game.gameState = 'playing';
+                        }, 1000);
+                        break;
                     }
-                };
+                }
                 
-                canvas.addEventListener('click', handleJump);
-                document.addEventListener('keydown', (e) => {
-                    if (e.code === 'Space') {
-                        e.preventDefault();
-                        handleJump();
-                    }
-                });
-                
-                gameLoop();
+                // Win condition
+                if (game.player.x >= game.levelLength) {
+                    game.gameState = 'won';
+                }
             }
             
-        } catch (error) {
-            console.error('Failed to load Geometry Dash:', error);
-            alert('Failed to load game. Please try again.');
-        }
-    } Clear and redraw
-                    ctx.fillStyle = '#87CEEB';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    ctx.fillStyle = '#2D3436';
-                    ctx.fillRect(0, 400, canvas.width, 100);
-                    
-                    // Update player
-                    if (!isGrounded) {
-                        velocity += 0.8; // gravity
-                    }
-                    
-                    playerY += velocity;
-                    
-                    if (playerY >= 360) {
-                        playerY = 360;
-                        velocity = 0;
-                        isGrounded = true;
-                    }
-                    
-                    //
+            // Render
+            ctx.save();
+            ctx.translate(-game.camera.x, 0);
+            
+            // Ground
+            ctx.fillStyle = '#2D3436';
+            ctx.fillRect(0, game.groundY, game.levelLength, 100);
+            
+            // Player
+            ctx.fillStyle = game.gameState === 'dead' ? '#FF7675' : game.player.color;
+            ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
+            
+            // Obstacles (spikes)
+            ctx.fillStyle = '#2D3436';
+            for (let i = 0; i < game.obstacles.length; i++) {
+                const obs = game.obstacles[i];
+                ctx.beginPath();
+                ctx.moveTo(obs.x + obs.width/2, obs.y);
+                ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                ctx.lineTo(obs.x, obs.y + obs.height);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            // UI
+            ctx.fillStyle = '#2D3436';
+            ctx.font = 'bold 20px Arial';
+            const progress = Math.floor((game.player.x / game.levelLength) * 100);
+            ctx.fillText('Progress: ' + progress + '%', 20, 40);
+            ctx.fillText('SPACE or Click to Jump!', 20, 70);
+            
+            if (multiplayer) {
+                ctx.fillText('Multiplayer Mode', 20, 100);
+            }
+            
+            // Game over screen
+            if (game.gameState === 'dead') {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('DEAD', canvas.width/2, canvas.height/2);
+                ctx.font = '24px Arial';
+                ctx.fillText('Respawning...', canvas.width/2, canvas.height/2 + 50);
+                ctx.textAlign = 'left';
+            } else if (game.gameState === 'won') {
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('YOU WIN!', canvas.width/2, canvas.height/2);
+                ctx.textAlign = 'left';
+            }
+            
+            requestAnimationFrame(gameLoop);
+        };
+        
+        console.log('Starting game...');
+        gameLoop();
+    }
 
     showLeaderboard() {
-        console.log('Showing leaderboard...');
         const infoEl = document.getElementById('game-info');
         infoEl.innerHTML = `
             <h3>Leaderboard</h3>
@@ -344,7 +398,6 @@ class TMAGame {
     }
 
     showSettings() {
-        console.log('Showing settings...');
         const infoEl = document.getElementById('game-info');
         infoEl.innerHTML = `
             <h3>Settings</h3>
@@ -359,7 +412,6 @@ class TMAGame {
     }
 
     showAbout() {
-        console.log('Showing about...');
         const infoEl = document.getElementById('game-info');
         infoEl.innerHTML = `
             <h3>About ${this.gameTitle}</h3>
@@ -373,14 +425,13 @@ class TMAGame {
     }
 
     saveSettings() {
-        // Save settings to localStorage
         const settings = {
-            sound: document.getElementById('sound-toggle')?.checked || false,
-            music: document.getElementById('music-toggle')?.checked || false,
-            difficulty: document.getElementById('difficulty')?.value || 3
+            sound: document.getElementById('sound-toggle').checked,
+            music: document.getElementById('music-toggle').checked,
+            difficulty: document.getElementById('difficulty').value
         };
         
-        localStorage.setItem('tmagame-settings', JSON.stringify(settings));
+        console.log('Settings saved:', settings);
         alert('Settings saved!');
         this.clearInfo();
     }
@@ -390,12 +441,12 @@ class TMAGame {
     }
 }
 
-// Initialize the game when DOM is loaded
+// Initialize when DOM loads
 document.addEventListener('DOMContentLoaded', () => {
     window.tmaGame = new TMAGame();
 });
 
-// Export for module use (if needed)
+// Export for modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = TMAGame;
 }
