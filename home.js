@@ -425,10 +425,14 @@ class TMAGame {
     }
 
     saveSettings() {
+        const soundToggle = document.getElementById('sound-toggle');
+        const musicToggle = document.getElementById('music-toggle');
+        const difficultySlider = document.getElementById('difficulty');
+        
         const settings = {
-            sound: document.getElementById('sound-toggle').checked,
-            music: document.getElementById('music-toggle').checked,
-            difficulty: document.getElementById('difficulty').value
+            sound: soundToggle ? soundToggle.checked : false,
+            music: musicToggle ? musicToggle.checked : false,
+            difficulty: difficultySlider ? difficultySlider.value : 3
         };
         
         console.log('Settings saved:', settings);
