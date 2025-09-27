@@ -1,1 +1,546 @@
+/* games/geometry-dash/styles.css - Game-specific styles */
 
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+}
+
+/* Game Header */
+#game-header {
+    position: relative;
+    background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+#home-btn {
+    padding: 10px 15px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#home-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-2px);
+}
+
+#game-title {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#game-controls {
+    display: flex;
+    gap: 10px;
+}
+
+#game-controls button {
+    padding: 8px 12px;
+    background: #00b894;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+#game-controls button:hover {
+    background: #00a085;
+    transform: translateY(-1px);
+}
+
+/* Game Container */
+#game-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: calc(100vh - 70px);
+}
+
+/* Loading Screen */
+#loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 52, 54, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-top: 6px solid #74b9ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#loading-screen p {
+    font-size: 1.2rem;
+    animation: pulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+/* Game Canvas */
+#gameCanvas {
+    border: 3px solid #2d3436;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+    max-width: 100%;
+    max-height: 70vh;
+}
+
+/* Game UI Overlay */
+#game-ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 50;
+    pointer-events: none;
+}
+
+#progress-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(45, 52, 54, 0.8);
+    padding: 10px 15px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+#progress-bar {
+    width: 200px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00b894, #00cec9);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+#progress-text {
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    min-width: 35px;
+}
+
+#multiplayer-info {
+    margin-top: 10px;
+    background: rgba(45, 52, 54, 0.8);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+#multiplayer-info span {
+    color: white;
+    font-size: 0.8rem;
+    margin-right: 10px;
+}
+
+/* Menu Screen */
+#menu-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 52, 54, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    backdrop-filter: blur(10px);
+}
+
+.menu-content {
+    text-align: center;
+    color: white;
+    max-width: 400px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.menu-content h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.menu-content > p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.menu-buttons button {
+    padding: 15px 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.menu-buttons button:first-child {
+    background: linear-gradient(45deg, #00b894, #00cec9);
+    color: white;
+}
+
+.menu-buttons button:last-child {
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    color: white;
+}
+
+.menu-buttons button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.controls-info {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #74b9ff;
+}
+
+.controls-info p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.controls-info strong {
+    color: #74b9ff;
+}
+
+/* Modal Screens (Game Over, Victory) */
+#game-over-screen,
+#victory-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(45, 52, 54, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 300;
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    text-align: center;
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 400px;
+    animation: modalAppear 0.5s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-content h3 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+
+#game-over-screen .modal-content h3 {
+    color: #ff7675;
+}
+
+#victory-screen .modal-content h3 {
+    color: #00b894;
+}
+
+.modal-content p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-buttons button {
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-buttons button:first-child {
+    background: #00b894;
+    color: white;
+}
+
+.modal-buttons button:last-child {
+    background: #636e72;
+    color: white;
+}
+
+.modal-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile Controls */
+#mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+}
+
+#jump-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    border: none;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(253, 121, 168, 0.4);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#jump-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 10px rgba(253, 121, 168, 0.6);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #game-header {
+        padding: 10px 15px;
+    }
+    
+    #game-title {
+        font-size: 1.4rem;
+    }
+    
+    #game-controls {
+        gap: 5px;
+    }
+    
+    #game-controls button {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    #game-container {
+        padding: 10px;
+    }
+    
+    #gameCanvas {
+        max-height: 60vh;
+        border-width: 2px;
+        border-radius: 10px;
+    }
+    
+    .menu-content {
+        padding: 20px;
+        margin: 20px;
+    }
+    
+    .menu-content h1 {
+        font-size: 2.2rem;
+    }
+    
+    .menu-buttons {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        padding: 25px;
+        margin: 20px;
+    }
+    
+    .modal-buttons {
+        flex-direction: column;
+    }
+    
+    #progress-container {
+        padding: 8px 12px;
+    }
+    
+    #progress-bar {
+        width: 150px;
+        height: 6px;
+    }
+    
+    #mobile-controls {
+        display: flex;
+    }
+}
+
+@media (max-width: 480px) {
+    #game-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    #game-title {
+        font-size: 1.2rem;
+    }
+    
+    .menu-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .modal-content h3 {
+        font-size: 2rem;
+    }
+    
+    #progress-bar {
+        width: 120px;
+    }
+    
+    #jump-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+    #game-header {
+        background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+    }
+    
+    .menu-content,
+    .modal-content {
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    #gameCanvas {
+        border-color: #000000;
+        border-width: 4px;
+    }
+    
+    .menu-content,
+    .modal-content {
+        border: 2px solid #ffffff;
+    }
+}
+
+/* Focus styles for keyboard navigation */
+button:focus,
+canvas:focus {
+    outline: 3px solid #74b9ff;
+    outline-offset: 2px;
+}
+
+/* Print styles (hide interactive elements) */
+@media print {
+    #game-header,
+    #mobile-controls,
+    #menu-screen,
+    #game-over-screen,
+    #victory-screen {
+        display: none !important;
+    }
+}
