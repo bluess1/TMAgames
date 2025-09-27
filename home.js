@@ -153,6 +153,8 @@ class TMAGame {
     }
 
     launchGeometryDash(multiplayer = false) {
+        console.log('🎮 Launching Geometry Dash...', { multiplayer });
+        
         // Hide current menu
         document.body.innerHTML = `
             <div id="game-header">
@@ -168,7 +170,7 @@ class TMAGame {
                     cursor: pointer;
                     z-index: 1000;
                 ">🏠 Home</button>
-                <h2 style="text-align: center; margin: 20px 0; color: #333;">
+                <h2 style="text-align: center; margin: 20px 0; color: white;">
                     Geometry Dash ${multiplayer ? '- Multiplayer' : '- Single Player'}
                 </h2>
             </div>
@@ -177,8 +179,12 @@ class TMAGame {
             </div>
         `;
         
+        console.log('✅ HTML updated, loading game...');
+        
         // Load and start the geometry dash game
-        this.loadGeometryDash(multiplayer);
+        setTimeout(() => {
+            this.loadGeometryDash(multiplayer);
+        }, 100); // Small delay to ensure DOM is updated
     }
 
     async loadGeometryDash(multiplayer) {
