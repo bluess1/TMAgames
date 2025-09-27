@@ -1,0 +1,14 @@
+{
+  "name": "Level 1",
+  "length": 5000,
+  "difficulty": "Easy",
+  "music": "level1.mp3",
+  "obstacles": [
+    {"x": 500, "y": 360, "type": "spike"},
+    {"x": 800, "y": 360, "type": "spike"}
+  ],
+  "coins": [
+    {"x": 400, "y": 300},
+    {"x": 650, "y": 280}
+  ]
+}
