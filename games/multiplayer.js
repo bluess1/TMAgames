@@ -1,5 +1,5 @@
 // WebSocket connection (add to multiplayer.js)
-const socket = io('bluess1.github.io/tmagames/');
+const socket = io('https://bluess1.github.io/TMAgames');
 
 socket.on('playerJoined', (playerData) => {
     // Add remote player
