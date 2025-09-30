@@ -1,4 +1,4 @@
-// games/geometry-dash/game.js - Multiplayer Geometry Dash Game (Using All Assets)
+// games/geometry-dash/game.js - Multiplayer Geometry Dash Game
 class GeometryDashGame {
     constructor() {
         this.canvas = null;
@@ -66,7 +66,7 @@ class GeometryDashGame {
         }
         
         this.startGameLoop();
-        this.startGame(this.isMultiplayer);
+        // Don't call startGame() here, let the menu handle it
     }
 
     setupCanvas() {
@@ -133,32 +133,22 @@ class GeometryDashGame {
         console.log('Loading assets from files...');
         
         const assetPaths = {
-            // Player images
             playerCube: '../../assets/images/player/cube.png',
-            
-            // Obstacle images
             obstacleSpike: '../../assets/images/obstacles/spike.png',
             obstacleBlock: '../../assets/images/obstacles/block.png',
-            
-            // Background images
             background: '../../assets/images/backgrounds/gradient.png',
-            
-            // UI images
             uiIcons: '../../assets/images/ui/icons.png',
-            
-            // Audio files
             sfxJump: '../../assets/audio/sfx/jump.mp3',
             sfxDeath: '../../assets/audio/sfx/death.mp3',
             musicMenu: '../../assets/audio/music/menu.mp3',
             musicLevel: '../../assets/audio/music/level1.mp3'
         };
         
-        // Load images
         const imagePromises = [];
         const imageKeys = ['playerCube', 'obstacleSpike', 'obstacleBlock', 'background', 'uiIcons'];
         
         imageKeys.forEach(key => {
-            const promise = new Promise((resolve, reject) => {
+            const promise = new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     this.images[key] = img;
@@ -175,7 +165,6 @@ class GeometryDashGame {
             imagePromises.push(promise);
         });
         
-        // Load audio
         const audioPromises = [];
         const audioKeys = ['sfxJump', 'sfxDeath', 'musicMenu', 'musicLevel'];
         
@@ -197,7 +186,6 @@ class GeometryDashGame {
             audioPromises.push(promise);
         });
         
-        // Wait for all assets to load
         await Promise.all([...imagePromises, ...audioPromises]);
         
         this.assetsLoaded = true;
@@ -205,50 +193,31 @@ class GeometryDashGame {
     }
 
     createFallbackImage(type) {
-        // Create fallback canvas-based images if files don't exist
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
         switch(type) {
             case 'playerCube':
-                canvas.width = 40;
-                canvas.height = 40;
-                ctx.fillStyle = '#FF6B6B';
-                ctx.fillRect(0, 0, 40, 40);
-                ctx.strokeStyle = '#D63031';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(0, 0, 40, 40);
+                canvas.width = 40; canvas.height = 40;
+                ctx.fillStyle = '#FF6B6B'; ctx.fillRect(0, 0, 40, 40);
+                ctx.strokeStyle = '#D63031'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 40, 40);
                 break;
-                
             case 'obstacleSpike':
-                canvas.width = 40;
-                canvas.height = 40;
-                ctx.fillStyle = '#2D3436';
-                ctx.beginPath();
-                ctx.moveTo(20, 0);
-                ctx.lineTo(40, 40);
-                ctx.lineTo(0, 40);
-                ctx.closePath();
-                ctx.fill();
+                canvas.width = 40; canvas.height = 40;
+                ctx.fillStyle = '#2D3436'; ctx.beginPath();
+                ctx.moveTo(20, 0); ctx.lineTo(40, 40); ctx.lineTo(0, 40);
+                ctx.closePath(); ctx.fill();
                 break;
-                
             case 'obstacleBlock':
-                canvas.width = 40;
-                canvas.height = 40;
-                ctx.fillStyle = '#2D3436';
-                ctx.fillRect(0, 0, 40, 40);
+                canvas.width = 40; canvas.height = 40;
+                ctx.fillStyle = '#2D3436'; ctx.fillRect(0, 0, 40, 40);
                 break;
-                
             case 'background':
-                canvas.width = 1;
-                canvas.height = 1;
-                ctx.fillStyle = '#87CEEB';
-                ctx.fillRect(0, 0, 1, 1);
+                canvas.width = 1; canvas.height = 1;
+                ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, 1, 1);
                 break;
-                
             default:
-                canvas.width = 1;
-                canvas.height = 1;
+                canvas.width = 1; canvas.height = 1;
                 break;
         }
         
@@ -258,12 +227,7 @@ class GeometryDashGame {
     }
 
     playSound(soundName) {
-        // Try to play from loaded audio files first
-        const audioMap = {
-            'jump': 'sfxJump',
-            'death': 'sfxDeath'
-        };
-        
+        const audioMap = { 'jump': 'sfxJump', 'death': 'sfxDeath' };
         const audioKey = audioMap[soundName];
         if (audioKey && this.audio[audioKey]) {
             const audio = this.audio[audioKey].cloneNode();
@@ -272,73 +236,46 @@ class GeometryDashGame {
             return;
         }
         
-        // Fallback to Web Audio API
         if (!this.audioContext) return;
-        
-        const soundDefs = {
-            death: { frequency: 110, duration: 0.3, type: 'sawtooth' }
-        };
-        
+        const soundDefs = { death: { frequency: 110, duration: 0.3, type: 'sawtooth' } };
         const soundDef = soundDefs[soundName];
         if (!soundDef) return;
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
-        
         oscillator.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
-        
         oscillator.frequency.setValueAtTime(soundDef.frequency, this.audioContext.currentTime);
         oscillator.type = soundDef.type;
-        
         gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + soundDef.duration);
-        
         oscillator.start(this.audioContext.currentTime);
         oscillator.stop(this.audioContext.currentTime + soundDef.duration);
     }
 
     createLevel() {
-        this.level = {
-            length: 5000,
-            obstacles: []
-        };
-        
+        this.level = { length: 5000, obstacles: [] };
         for (let x = 500; x < this.level.length; x += 200 + Math.random() * 300) {
             this.level.obstacles.push({
-                x: x,
-                y: this.groundY - 40,
-                width: 40,
-                height: 40,
-                type: 'spike'
+                x: x, y: this.groundY - 40, width: 40, height: 40, type: 'spike'
             });
         }
     }
 
     createPlayer(playerId, isLocal = false) {
         return {
-            id: playerId,
-            x: 100,
-            y: this.groundY - 40,
-            width: 40,
-            height: 40,
-            velocityY: 0,
-            isGrounded: false,
-            isLocal: isLocal,
-            color: isLocal ? '#FF6B6B' : '#74B9FF',
-            trail: [],
-            alive: true,
-            startX: 100
+            id: playerId, x: 100, y: this.groundY - 40, width: 40, height: 40,
+            velocityY: 0, isGrounded: false, isLocal: isLocal,
+            color: isLocal ? '#FF6B6B' : '#74B9FF', trail: [], alive: true, startX: 100
         };
     }
 
     handleJump() {
-        if (this.gameState !== 'playing') {
-            if (this.gameState === 'menu') {
-                this.startGame();
-            }
+        if (this.gameState === 'menu') {
+            this.startGame();
             return;
         }
+        if (this.gameState !== 'playing') return;
         
         const localPlayer = this.players.find(p => p.isLocal);
         if (localPlayer && localPlayer.alive && localPlayer.isGrounded) {
@@ -351,42 +288,49 @@ class GeometryDashGame {
         }
     }
 
-    startGame(multiplayer = false) {
+    startGame() {
+        if (this.gameState !== 'menu') return;
+
         this.gameState = 'playing';
-        this.isMultiplayer = multiplayer;
         
-        const playerId = 'player_' + Math.random().toString(36).substr(2, 12);
-        this.players = [this.createPlayer(playerId, true)];
+        let playerId = 'player_single_' + Math.random().toString(36).substr(2, 9);
+        if (this.isMultiplayer && this.multiplayerManager) {
+            playerId = this.multiplayerManager.playerId;
+        }
+
+        // Create the local player. Remote players are added by MultiplayerManager.
+        const localPlayer = this.createPlayer(playerId, true);
+        this.players = [localPlayer];
         
-        console.log('Game started!', { multiplayer, playerId });
+        console.log('Game started!', { multiplayer: this.isMultiplayer, playerId });
     }
 
     update(deltaTime) {
         if (this.gameState !== 'playing') return;
         
+        // This loop now handles logic separation correctly
         this.players.forEach(player => {
             if (!player.alive) return;
-            
-            // Use physics engine
-            this.physics.updateEntity(player, this.groundY);
-            
+
+            // Only the local player has its physics calculated and sent to the server.
+            // Remote players have their positions updated directly by the server messages.
             if (player.isLocal) {
-                this.camera.x = player.x - this.canvas.width / 4;
+                this.physics.updateEntity(player, this.groundY);
                 player.x += this.gameSpeed;
+                this.camera.x = player.x - this.canvas.width / 4;
+                this.checkCollisions(player);
+
+                if (player.x >= this.level.length) {
+                    this.winGame();
+                }
             }
             
-            this.checkCollisions(player);
-            
+            // Trail effect is purely visual, so it runs for all players
             player.trail.push({ x: player.x, y: player.y, time: Date.now() });
             player.trail = player.trail.filter(t => Date.now() - t.time < 500);
         });
         
         this.updateParticles(deltaTime);
-        
-        const localPlayer = this.players.find(p => p.isLocal);
-        if (localPlayer && localPlayer.x >= this.level.length) {
-            this.winGame();
-        }
     }
 
     checkCollisions(player) {
@@ -403,23 +347,30 @@ class GeometryDashGame {
         player.alive = false;
         this.playSound('death');
         this.createExplosionParticles(player.x, player.y);
+
+        // Inform the server if the local player died
+        if (this.isMultiplayer && player.isLocal) {
+            this.multiplayerManager.sendDeath();
+        }
         
-        setTimeout(() => {
-            player.x = player.startX;
-            player.y = this.groundY - 40;
-            player.velocityY = 0;
-            player.alive = true;
-        }, 1000);
+        // Respawn logic (only for the local player)
+        if (player.isLocal) {
+            setTimeout(() => {
+                player.x = player.startX;
+                player.y = this.groundY - 40;
+                player.velocityY = 0;
+                player.alive = true;
+            }, 1000);
+        }
     }
 
     render() {
+        if (!this.ctx) return;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw background image if loaded
         if (this.images.background) {
             this.ctx.drawImage(this.images.background, 0, 0, this.canvas.width, this.canvas.height);
         } else {
-            // Fallback gradient
             const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
             gradient.addColorStop(0, '#87CEEB');
             gradient.addColorStop(1, '#98FB98');
@@ -444,17 +395,14 @@ class GeometryDashGame {
     }
 
     renderLevel() {
-        // Render ground
         this.ctx.fillStyle = '#2D3436';
         this.ctx.fillRect(0, this.groundY, this.level.length, 100);
         
-        // Render obstacles using loaded images
         this.level.obstacles.forEach(obstacle => {
             const obstacleImage = this.images.obstacleSpike || this.images.obstacleBlock;
             if (obstacleImage) {
                 this.ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
             } else {
-                // Fallback spike drawing
                 this.ctx.fillStyle = '#2D3436';
                 this.ctx.beginPath();
                 this.ctx.moveTo(obstacle.x + obstacle.width/2, obstacle.y);
@@ -470,18 +418,15 @@ class GeometryDashGame {
         this.players.forEach(player => {
             if (!player.alive) return;
             
-            // Render trail
             player.trail.forEach((point, index) => {
                 const alpha = index / player.trail.length;
                 this.ctx.fillStyle = `rgba(116, 185, 255, ${alpha * 0.3})`;
                 this.ctx.fillRect(point.x, point.y, 5, 5);
             });
             
-            // Render player using loaded image
             if (this.images.playerCube) {
                 this.ctx.drawImage(this.images.playerCube, player.x, player.y, player.width, player.height);
             } else {
-                // Fallback player drawing
                 this.ctx.fillStyle = player.isLocal ? '#FF6B6B' : player.color;
                 this.ctx.fillRect(player.x, player.y, player.width, player.height);
             }
@@ -542,33 +487,23 @@ class GeometryDashGame {
     createExplosionParticles(x, y) {
         for (let i = 0; i < 15; i++) {
             this.particles.push({
-                x: x + Math.random() * 30,
-                y: y + Math.random() * 30,
-                velocityX: (Math.random() - 0.5) * 15,
-                velocityY: (Math.random() - 0.5) * 15,
-                size: 4,
-                color: '#FF7675',
-                alpha: 1,
-                decay: 0.03
+                x: x + Math.random() * 30, y: y + Math.random() * 30,
+                velocityX: (Math.random() - 0.5) * 15, velocityY: (Math.random() - 0.5) * 15,
+                size: 4, color: '#FF7675', alpha: 1, decay: 0.03
             });
         }
     }
 
     updateParticles(deltaTime) {
-        this.particles = this.particles.filter(particle => {
-            particle.x += particle.velocityX;
-            particle.y += particle.velocityY;
-            particle.alpha -= particle.decay;
-            return particle.alpha > 0;
+        this.particles = this.particles.filter(p => {
+            p.x += p.velocityX; p.y += p.velocityY; p.alpha -= p.decay;
+            return p.alpha > 0;
         });
     }
 
     togglePause() {
-        if (this.gameState === 'playing') {
-            this.gameState = 'paused';
-        } else if (this.gameState === 'paused') {
-            this.gameState = 'playing';
-        }
+        if (this.gameState === 'playing') this.gameState = 'paused';
+        else if (this.gameState === 'paused') this.gameState = 'playing';
     }
 
     winGame() {
@@ -577,11 +512,16 @@ class GeometryDashGame {
     }
 
     gameLoop(currentTime) {
-        const deltaTime = currentTime - this.lastTime;
+        const deltaTime = (currentTime - this.lastTime) || 0;
         this.lastTime = currentTime;
         
         this.update(deltaTime);
         this.render();
+        
+        // On every frame, if in multiplayer, send the local player's state to the server.
+        if (this.isMultiplayer && this.multiplayerManager && this.gameState === 'playing') {
+            this.multiplayerManager.sendPlayerUpdate();
+        }
         
         this.animationId = requestAnimationFrame((time) => this.gameLoop(time));
     }
@@ -591,17 +531,9 @@ class GeometryDashGame {
     }
 
     destroy() {
-        if (this.animationId) {
-            cancelAnimationFrame(this.animationId);
-        }
-        
-        if (this.audioContext) {
-            this.audioContext.close();
-        }
-        
-        if (this.multiplayerManager) {
-            this.multiplayerManager.disconnect();
-        }
+        if (this.animationId) cancelAnimationFrame(this.animationId);
+        if (this.audioContext) this.audioContext.close();
+        if (this.multiplayerManager) this.multiplayerManager.disconnect();
     }
 }
 
