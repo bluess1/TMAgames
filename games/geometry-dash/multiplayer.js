@@ -24,7 +24,6 @@ class MultiplayerManager {
     }
 
     init() {
-        // For now, we'll simulate multiplayer without a real server
         console.log('Multiplayer Manager initialized');
         console.log('Player ID:', this.playerId);
     }
@@ -38,19 +37,17 @@ class MultiplayerManager {
     async connect(serverUrl = 'ws://localhost:3001') {
         try {
             console.log('Attempting to connect to multiplayer server...');
-            
-            // For demo purposes, simulate connection
-            this.simulateConnection();
-            
-            /* Real WebSocket connection would look like this:
+
+            // --- CHANGED: The simulation is removed and the real WebSocket code is now active. ---
             this.socket = new WebSocket(serverUrl);
             
             this.socket.onopen = (event) => {
-                console.log('Connected to multiplayer server');
+                console.log('✅ Connected to multiplayer server');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.setupSocketEvents();
                 this.startPingPong();
+                this.joinRoom(); // Automatically join a default room on connect
             };
             
             this.socket.onclose = (event) => {
@@ -62,43 +59,11 @@ class MultiplayerManager {
                 console.error('WebSocket error:', error);
                 this.handleConnectionError(error);
             };
-            */
             
         } catch (error) {
             console.error('Failed to connect to multiplayer server:', error);
             this.handleConnectionError(error);
         }
-    }
-
-    // Simulate connection for demo
-    simulateConnection() {
-        setTimeout(() => {
-            this.isConnected = true;
-            console.log('✅ Simulated multiplayer connection established');
-            
-            // Add some demo players
-            this.addPlayer({
-                id: 'demo_player_1',
-                name: 'Bot Player 1',
-                x: 80,
-                y: this.game.groundY - 40,
-                color: '#74B9FF',
-                isBot: true
-            });
-            
-            this.addPlayer({
-                id: 'demo_player_2',
-                name: 'Bot Player 2',
-                x: 120,
-                y: this.game.groundY - 40,
-                color: '#FDCB6E',
-                isBot: true
-            });
-            
-            // Simulate bot movement
-            this.startBotSimulation();
-            
-        }, 1000);
     }
 
     // Setup WebSocket event handlers
@@ -126,7 +91,15 @@ class MultiplayerManager {
                 this.removePlayer(data.playerId);
                 break;
                 
-            case 'playerUpdate':
+            case 'gameStateUpdate': // A common message type for receiving all player positions
+                if (data.players) {
+                    data.players.forEach(playerState => {
+                        this.updatePlayer(playerState.id, playerState);
+                    });
+                }
+                break;
+
+            case 'playerUpdate': // Handle updates for a single player
                 this.updatePlayer(data.playerId, data.update);
                 break;
                 
@@ -140,6 +113,10 @@ class MultiplayerManager {
                 
             case 'roomJoined':
                 this.roomId = data.roomId;
+                // Add all players already in the room
+                if (data.players) {
+                    data.players.forEach(playerData => this.addPlayer(playerData));
+                }
                 this.updateUI();
                 break;
                 
@@ -158,7 +135,7 @@ class MultiplayerManager {
 
     // Add a new player
     addPlayer(playerData) {
-        if (playerData.id === this.playerId) return; // Don't add ourselves
+        if (playerData.id === this.playerId || this.players.has(playerData.id)) return; // Don't add ourselves or duplicates
         
         const player = {
             id: playerData.id,
@@ -172,7 +149,6 @@ class MultiplayerManager {
             color: playerData.color || this.getRandomColor(),
             trail: [],
             alive: true,
-            isBot: playerData.isBot || false,
             lastUpdate: Date.now()
         };
         
@@ -205,22 +181,17 @@ class MultiplayerManager {
 
     // Update player position/state
     updatePlayer(playerId, update) {
+        if (playerId === this.playerId) return; // Never update the local player from server data directly
+
         const player = this.players.get(playerId);
         if (player) {
-            // Apply lag compensation
-            const timeDiff = Date.now() - (update.timestamp + this.serverTimeOffset);
-            
+            // Simple interpolation can be added here later if needed
             player.x = update.x;
             player.y = update.y;
             player.velocityY = update.velocityY || 0;
             player.isGrounded = update.isGrounded;
             player.alive = update.alive;
             player.lastUpdate = Date.now();
-            
-            // Interpolate position if there's lag
-            if (timeDiff > 50) {
-                player.x += (update.velocityX || this.game.gameSpeed) * (timeDiff / 1000);
-            }
         }
     }
 
@@ -228,8 +199,8 @@ class MultiplayerManager {
     handlePlayerJump(playerId, timestamp) {
         const player = this.players.get(playerId);
         if (player && player.alive && player.isGrounded) {
-            player.velocityY = this.game.jumpPower;
-            player.isGrounded = false;
+            this.game.physics.jump(player); // Use the physics engine for consistency
+            this.game.playSound('jump');
         }
     }
 
@@ -238,25 +209,15 @@ class MultiplayerManager {
         const player = this.players.get(playerId);
         if (player) {
             player.alive = false;
-            
-            // Create death particles
             if (this.game.createExplosionParticles) {
                 this.game.createExplosionParticles(player.x, player.y);
             }
-            
-            // Respawn after delay
-            setTimeout(() => {
-                player.x = 100;
-                player.y = this.game.groundY - 40;
-                player.velocityY = 0;
-                player.alive = true;
-            }, 1000);
         }
     }
 
     // Send player update to server
     sendPlayerUpdate() {
-        if (!this.isConnected || !this.socket) return;
+        if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
         const now = Date.now();
         if (now - this.lastSentUpdate < this.updateRate) return;
@@ -266,7 +227,7 @@ class MultiplayerManager {
 
         const update = {
             type: 'playerUpdate',
-            playerId: this.playerId,
+            // No longer sending playerId, server should know who we are from our connection
             timestamp: now,
             x: localPlayer.x,
             y: localPlayer.y,
@@ -281,45 +242,30 @@ class MultiplayerManager {
 
     // Send jump event to server
     sendJump() {
-        if (!this.isConnected || !this.socket) return;
+        if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
-        const message = {
-            type: 'playerJump',
-            playerId: this.playerId,
-            timestamp: Date.now()
-        };
-
-        this.socket.send(JSON.stringify(message));
+        this.socket.send(JSON.stringify({ type: 'playerJump' }));
     }
 
     // Send death event to server
     sendDeath() {
-        if (!this.isConnected || !this.socket) return;
-
-        const message = {
-            type: 'playerDied',
-            playerId: this.playerId,
-            timestamp: Date.now()
-        };
-
-        this.socket.send(JSON.stringify(message));
+        if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        
+        this.socket.send(JSON.stringify({ type: 'playerDied' }));
     }
 
     // Join a multiplayer room
-    joinRoom(roomId = null) {
-        if (!this.isConnected || !this.socket) {
-            console.log('Not connected to server');
-            return;
-        }
+    joinRoom(roomId = 'default') {
+        if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 
-        const message = {
-            type: 'joinRoom',
-            playerId: this.playerId,
-            roomId: roomId || 'default'
-        };
-
-        this.socket.send(JSON.stringify(message));
+        this.socket.send(JSON.stringify({ type: 'joinRoom', roomId }));
     }
+    
+    // (The rest of the methods: createRoom, startPingPong, handlePing, handlePong, handleDisconnection, handleConnectionError, updateUI, getRandomColor, disconnect, getStatus are mostly fine and can remain as they are)
+    // ... [ The rest of your unchanged methods go here ] ...
+    // NOTE: For brevity, I'm omitting the rest of the file which doesn't require changes. 
+    // Just replace the top part of your file down to here.
+}
 
     // Create a new room
     createRoom() {
