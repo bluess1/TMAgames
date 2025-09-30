@@ -43,30 +43,14 @@ class GeometryDashGame {
         await this.loadAssets();
         this.createLevel();
         
-        // Check for multiplayer mode from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        
-        if (mode === 'multi') {
-            this.isMultiplayer = true;
-            this.multiplayerManager = new MultiplayerManager(this);
-            await this.multiplayerManager.connect();
-        }
-        
-        // Hide loading screen
+        // Hide loading screen and start the game loop, which will render the menu
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
             loadingScreen.style.display = 'none';
         }
         
-        // Hide menu and start game
-        const menuScreen = document.getElementById('menu-screen');
-        if (menuScreen) {
-            menuScreen.style.display = 'none';
-        }
-        
+        // The game loop will now run, but since gameState is 'menu', it will just show the menu.
         this.startGameLoop();
-        // Don't call startGame() here, let the menu handle it
     }
 
     setupCanvas() {
@@ -150,16 +134,8 @@ class GeometryDashGame {
         imageKeys.forEach(key => {
             const promise = new Promise((resolve) => {
                 const img = new Image();
-                img.onload = () => {
-                    this.images[key] = img;
-                    console.log(`✅ Loaded image: ${key}`);
-                    resolve();
-                };
-                img.onerror = () => {
-                    console.warn(`⚠️ Failed to load image: ${key}, using fallback`);
-                    this.images[key] = this.createFallbackImage(key);
-                    resolve();
-                };
+                img.onload = () => { this.images[key] = img; resolve(); };
+                img.onerror = () => { this.images[key] = this.createFallbackImage(key); resolve(); };
                 img.src = assetPaths[key];
             });
             imagePromises.push(promise);
@@ -171,15 +147,8 @@ class GeometryDashGame {
         audioKeys.forEach(key => {
             const promise = new Promise((resolve) => {
                 const audio = new Audio();
-                audio.oncanplaythrough = () => {
-                    this.audio[key] = audio;
-                    console.log(`✅ Loaded audio: ${key}`);
-                    resolve();
-                };
-                audio.onerror = () => {
-                    console.warn(`⚠️ Failed to load audio: ${key}`);
-                    resolve();
-                };
+                audio.oncanplaythrough = () => { this.audio[key] = audio; resolve(); };
+                audio.onerror = () => resolve();
                 audio.src = assetPaths[key];
                 audio.load();
             });
@@ -187,7 +156,6 @@ class GeometryDashGame {
         });
         
         await Promise.all([...imagePromises, ...audioPromises]);
-        
         this.assetsLoaded = true;
         console.log('✅ All assets loaded!');
     }
@@ -195,32 +163,20 @@ class GeometryDashGame {
     createFallbackImage(type) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
         switch(type) {
             case 'playerCube':
                 canvas.width = 40; canvas.height = 40;
                 ctx.fillStyle = '#FF6B6B'; ctx.fillRect(0, 0, 40, 40);
-                ctx.strokeStyle = '#D63031'; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 40, 40);
                 break;
             case 'obstacleSpike':
                 canvas.width = 40; canvas.height = 40;
                 ctx.fillStyle = '#2D3436'; ctx.beginPath();
-                ctx.moveTo(20, 0); ctx.lineTo(40, 40); ctx.lineTo(0, 40);
-                ctx.closePath(); ctx.fill();
-                break;
-            case 'obstacleBlock':
-                canvas.width = 40; canvas.height = 40;
-                ctx.fillStyle = '#2D3436'; ctx.fillRect(0, 0, 40, 40);
-                break;
-            case 'background':
-                canvas.width = 1; canvas.height = 1;
-                ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, 1, 1);
+                ctx.moveTo(20, 0); ctx.lineTo(40, 40); ctx.lineTo(0, 40); ctx.closePath(); ctx.fill();
                 break;
             default:
                 canvas.width = 1; canvas.height = 1;
                 break;
         }
-        
         const img = new Image();
         img.src = canvas.toDataURL();
         return img;
@@ -228,104 +184,71 @@ class GeometryDashGame {
 
     playSound(soundName) {
         const audioMap = { 'jump': 'sfxJump', 'death': 'sfxDeath' };
-        const audioKey = audioMap[soundName];
-        if (audioKey && this.audio[audioKey]) {
-            const audio = this.audio[audioKey].cloneNode();
-            audio.volume = 0.3;
-            audio.play().catch(e => console.warn('Audio play failed:', e));
-            return;
+        if (this.audio[audioMap[soundName]]) {
+            this.audio[audioMap[soundName]].cloneNode().play().catch(e => console.warn("Audio play failed:", e));
         }
-        
-        if (!this.audioContext) return;
-        const soundDefs = { death: { frequency: 110, duration: 0.3, type: 'sawtooth' } };
-        const soundDef = soundDefs[soundName];
-        if (!soundDef) return;
-        
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        oscillator.frequency.setValueAtTime(soundDef.frequency, this.audioContext.currentTime);
-        oscillator.type = soundDef.type;
-        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + soundDef.duration);
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + soundDef.duration);
     }
 
     createLevel() {
         this.level = { length: 5000, obstacles: [] };
         for (let x = 500; x < this.level.length; x += 200 + Math.random() * 300) {
-            this.level.obstacles.push({
-                x: x, y: this.groundY - 40, width: 40, height: 40, type: 'spike'
-            });
+            this.level.obstacles.push({ x, y: this.groundY - 40, width: 40, height: 40, type: 'spike' });
         }
     }
 
     createPlayer(playerId, isLocal = false) {
         return {
             id: playerId, x: 100, y: this.groundY - 40, width: 40, height: 40,
-            velocityY: 0, isGrounded: false, isLocal: isLocal,
-            color: isLocal ? '#FF6B6B' : '#74B9FF', trail: [], alive: true, startX: 100
+            velocityY: 0, isGrounded: false, isLocal, color: isLocal ? '#FF6B6B' : '#74B9FF',
+            trail: [], alive: true, startX: 100
         };
     }
 
     handleJump() {
-        if (this.gameState === 'menu') {
-            this.startGame();
-            return;
-        }
         if (this.gameState !== 'playing') return;
-        
         const localPlayer = this.players.find(p => p.isLocal);
         if (localPlayer && localPlayer.alive && localPlayer.isGrounded) {
             this.physics.jump(localPlayer);
             this.playSound('jump');
-            
-            if (this.isMultiplayer && this.multiplayerManager) {
-                this.multiplayerManager.sendJump();
-            }
+            if (this.isMultiplayer) this.multiplayerManager.sendJump();
         }
     }
 
-    startGame() {
-        if (this.gameState !== 'menu') return;
+    async startGame(isMultiplayerMode) {
+        if (this.gameState === 'playing') return;
+
+        this.isMultiplayer = isMultiplayerMode;
+        
+        const menuScreen = document.getElementById('menu-screen');
+        if (menuScreen) menuScreen.style.display = 'none';
+
+        if (this.isMultiplayer) {
+            this.multiplayerManager = new MultiplayerManager(this);
+            await this.multiplayerManager.connect();
+        }
 
         this.gameState = 'playing';
-        
         let playerId = 'player_single_' + Math.random().toString(36).substr(2, 9);
         if (this.isMultiplayer && this.multiplayerManager) {
             playerId = this.multiplayerManager.playerId;
         }
 
-        // Create the local player. Remote players are added by MultiplayerManager.
-        const localPlayer = this.createPlayer(playerId, true);
-        this.players = [localPlayer];
-        
+        this.players = [this.createPlayer(playerId, true)];
         console.log('Game started!', { multiplayer: this.isMultiplayer, playerId });
     }
 
     update(deltaTime) {
         if (this.gameState !== 'playing') return;
         
-        // This loop now handles logic separation correctly
         this.players.forEach(player => {
             if (!player.alive) return;
-
-            // Only the local player has its physics calculated and sent to the server.
-            // Remote players have their positions updated directly by the server messages.
             if (player.isLocal) {
                 this.physics.updateEntity(player, this.groundY);
                 player.x += this.gameSpeed;
                 this.camera.x = player.x - this.canvas.width / 4;
                 this.checkCollisions(player);
-
-                if (player.x >= this.level.length) {
-                    this.winGame();
-                }
+                if (player.x >= this.level.length) this.winGame();
             }
-            
-            // Trail effect is purely visual, so it runs for all players
             player.trail.push({ x: player.x, y: player.y, time: Date.now() });
             player.trail = player.trail.filter(t => Date.now() - t.time < 500);
         });
@@ -343,18 +266,12 @@ class GeometryDashGame {
 
     playerDie(player) {
         if (!player.alive) return;
-        
         player.alive = false;
         this.playSound('death');
         this.createExplosionParticles(player.x, player.y);
 
-        // Inform the server if the local player died
-        if (this.isMultiplayer && player.isLocal) {
-            this.multiplayerManager.sendDeath();
-        }
-        
-        // Respawn logic (only for the local player)
         if (player.isLocal) {
+            if (this.isMultiplayer) this.multiplayerManager.sendDeath();
             setTimeout(() => {
                 player.x = player.startX;
                 player.y = this.groundY - 40;
@@ -388,56 +305,35 @@ class GeometryDashGame {
         this.ctx.restore();
         
         this.renderUI();
-        
-        if (this.gameState === 'menu') {
-            this.renderMenu();
-        }
     }
 
     renderLevel() {
         this.ctx.fillStyle = '#2D3436';
         this.ctx.fillRect(0, this.groundY, this.level.length, 100);
-        
         this.level.obstacles.forEach(obstacle => {
-            const obstacleImage = this.images.obstacleSpike || this.images.obstacleBlock;
-            if (obstacleImage) {
-                this.ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-            } else {
-                this.ctx.fillStyle = '#2D3436';
-                this.ctx.beginPath();
-                this.ctx.moveTo(obstacle.x + obstacle.width/2, obstacle.y);
-                this.ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
-                this.ctx.lineTo(obstacle.x, obstacle.y + obstacle.height);
-                this.ctx.closePath();
-                this.ctx.fill();
-            }
+            const img = this.images.obstacleSpike;
+            if (img) this.ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         });
     }
 
     renderPlayers() {
         this.players.forEach(player => {
             if (!player.alive) return;
-            
-            player.trail.forEach((point, index) => {
-                const alpha = index / player.trail.length;
+            player.trail.forEach((p, i) => {
+                const alpha = i / player.trail.length;
                 this.ctx.fillStyle = `rgba(116, 185, 255, ${alpha * 0.3})`;
-                this.ctx.fillRect(point.x, point.y, 5, 5);
+                this.ctx.fillRect(p.x, p.y, 5, 5);
             });
-            
-            if (this.images.playerCube) {
-                this.ctx.drawImage(this.images.playerCube, player.x, player.y, player.width, player.height);
-            } else {
-                this.ctx.fillStyle = player.isLocal ? '#FF6B6B' : player.color;
-                this.ctx.fillRect(player.x, player.y, player.width, player.height);
-            }
+            const img = this.images.playerCube;
+            if (img) this.ctx.drawImage(img, player.x, player.y, player.width, player.height);
         });
     }
 
     renderParticles() {
-        this.particles.forEach(particle => {
-            this.ctx.fillStyle = particle.color;
-            this.ctx.globalAlpha = particle.alpha;
-            this.ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
+        this.particles.forEach(p => {
+            this.ctx.fillStyle = p.color;
+            this.ctx.globalAlpha = p.alpha;
+            this.ctx.fillRect(p.x, p.y, p.size, p.size);
         });
         this.ctx.globalAlpha = 1;
     }
@@ -447,42 +343,25 @@ class GeometryDashGame {
         if (localPlayer) {
             const progress = localPlayer.x / this.level.length;
             const barWidth = 200;
-            
             this.ctx.fillStyle = '#2D3436';
             this.ctx.font = 'bold 20px Arial';
             this.ctx.fillText('Progress:', 20, 35);
-            
             this.ctx.fillStyle = '#DDD';
             this.ctx.fillRect(20, 45, barWidth, 15);
             this.ctx.fillStyle = '#00B894';
             this.ctx.fillRect(20, 45, barWidth * progress, 15);
-            
             this.ctx.fillStyle = '#2D3436';
             this.ctx.font = '16px Arial';
             this.ctx.fillText(`${Math.floor(progress * 100)}%`, 230, 57);
         }
-        
         if (this.isMultiplayer) {
             this.ctx.fillStyle = '#2D3436';
             this.ctx.font = '16px Arial';
             this.ctx.fillText(`Players: ${this.players.length}`, 20, 85);
         }
     }
-
-    renderMenu() {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.font = 'bold 48px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('Geometry Dash', this.canvas.width / 2, this.canvas.height / 2 - 50);
-        
-        this.ctx.font = '24px Arial';
-        this.ctx.fillText('Click or Press SPACE to Start', this.canvas.width / 2, this.canvas.height / 2 + 20);
-        
-        this.ctx.textAlign = 'left';
-    }
+    
+    // Note: The renderMenu() method is not needed here as the menu is a permanent HTML element now.
 
     createExplosionParticles(x, y) {
         for (let i = 0; i < 15; i++) {
@@ -512,22 +391,25 @@ class GeometryDashGame {
     }
 
     gameLoop(currentTime) {
-        const deltaTime = (currentTime - this.lastTime) || 0;
+        const deltaTime = (this.lastTime) ? currentTime - this.lastTime : 0;
         this.lastTime = currentTime;
         
-        this.update(deltaTime);
+        if (this.gameState !== 'menu') {
+            this.update(deltaTime);
+        }
         this.render();
-        
-        // On every frame, if in multiplayer, send the local player's state to the server.
-        if (this.isMultiplayer && this.multiplayerManager && this.gameState === 'playing') {
+
+        if (this.isMultiplayer && this.gameState === 'playing') {
             this.multiplayerManager.sendPlayerUpdate();
         }
         
-        this.animationId = requestAnimationFrame((time) => this.gameLoop(time));
+        this.animationId = requestAnimationFrame(time => this.gameLoop(time));
     }
 
     startGameLoop() {
-        this.gameLoop(0);
+        if (!this.animationId) {
+            this.animationId = requestAnimationFrame(time => this.gameLoop(time));
+        }
     }
 
     destroy() {
@@ -537,10 +419,8 @@ class GeometryDashGame {
     }
 }
 
-// Initialize game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.geometryDashGame = new GeometryDashGame();
-});
+// CRITICAL: NO automatic game initialization here anymore.
+// The script in game.html is now responsible for this.
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = GeometryDashGame;
