@@ -34,7 +34,14 @@ class MultiplayerManager {
     }
 
     // Connect to multiplayer server
-    async connect(serverUrl = 'ws://localhost:3001') {
+// In multiplayer.js
+// Change this line:
+async connect(serverUrl = 'ws://localhost:3001') { 
+
+// To this, using your new public Glitch URL:
+async connect(serverUrl = 'wss://https://bluess1.github.io/TMAgames') { 
+    
+        
         try {
             console.log('Attempting to connect to multiplayer server...');
 
