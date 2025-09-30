@@ -22,13 +22,13 @@
 <body>
     <!-- Game Header -->
     <div id="game-header">
-        <button id="home-btn" onclick="window.location.href='../../index.html'">
+        <button id="home-btn" onclick="goHome()">
             🏠 Home
         </button>
         <h2 id="game-title">Geometry Dash</h2>
         <div id="game-controls">
-            <button id="pause-btn" onclick="gameInstance.togglePause()">⏸️ Pause</button>
-            <button id="restart-btn" onclick="gameInstance.restart()">🔄 Restart</button>
+            <button id="pause-btn" onclick="pauseGame()">⏸️ Pause</button>
+            <button id="restart-btn" onclick="restartGame()">🔄 Restart</button>
         </div>
     </div>
     
@@ -107,7 +107,7 @@
         <button id="jump-btn">JUMP</button>
     </div>
     
-    <!-- Scripts -->
+    <!-- Scripts - Load in correct order -->
     <script src="physics.js"></script>
     <script src="multiplayer.js"></script>
     <script src="game.js"></script>
@@ -116,21 +116,45 @@
     <script>
         let gameInstance;
         
+        console.log('🎮 Game HTML loaded');
+        console.log('PhysicsEngine available:', typeof PhysicsEngine);
+        console.log('MultiplayerManager available:', typeof MultiplayerManager);
+        console.log('GeometryDashGame available:', typeof GeometryDashGame);
+        
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ DOM Content Loaded');
+            
             // Hide loading screen after everything loads
             setTimeout(() => {
-                document.getElementById('loading-screen').style.display = 'none';
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                    console.log('✅ Loading screen hidden');
+                }
             }, 1000);
             
-            // Initialize game
-            gameInstance = new GeometryDashGame();
+            // Check if GeometryDashGame class exists
+            if (typeof GeometryDashGame !== 'undefined') {
+                console.log('✅ Initializing game...');
+                gameInstance = new GeometryDashGame();
+                console.log('✅ Game instance created:', gameInstance);
+            } else {
+                console.error('❌ GeometryDashGame class not found!');
+                alert('Error: Game failed to load. Check console for details.');
+            }
             
             // Mobile detection and setup
             if (window.innerWidth <= 768) {
-                document.getElementById('mobile-controls').style.display = 'flex';
-                document.getElementById('jump-btn').addEventListener('click', () => {
-                    gameInstance.handleJump();
-                });
+                const mobileControls = document.getElementById('mobile-controls');
+                if (mobileControls) {
+                    mobileControls.style.display = 'flex';
+                }
+                const jumpBtn = document.getElementById('jump-btn');
+                if (jumpBtn && gameInstance) {
+                    jumpBtn.addEventListener('click', () => {
+                        gameInstance.handleJump();
+                    });
+                }
             }
         });
         
@@ -138,9 +162,9 @@
         document.addEventListener('visibilitychange', () => {
             if (gameInstance) {
                 if (document.hidden) {
-                    gameInstance.pause();
+                    if (gameInstance.pause) gameInstance.pause();
                 } else {
-                    gameInstance.resume();
+                    if (gameInstance.resume) gameInstance.resume();
                 }
             }
         });
@@ -154,6 +178,25 @@
             }
             lastTouchEnd = now;
         }, false);
+        
+        // Helper functions for UI buttons
+        window.restartGame = function() {
+            if (gameInstance && gameInstance.startGame) {
+                gameInstance.startGame(gameInstance.isMultiplayer);
+            } else {
+                location.reload();
+            }
+        };
+        
+        window.pauseGame = function() {
+            if (gameInstance && gameInstance.togglePause) {
+                gameInstance.togglePause();
+            }
+        };
+        
+        window.goHome = function() {
+            window.location.href = '../../index.html';
+        };
     </script>
 </body>
 </html>
